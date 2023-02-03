@@ -24,7 +24,7 @@ int initRTPMuxContext(RTPMuxContext *ctx){
     ctx->seq = 0;
     ctx->timestamp = 0;
     ctx->ssrc = 0x12345678; // random number
-    ctx->aggregation = 1;   // use Aggregation Unit
+    ctx->aggregation = 0;   // use Aggregation Unit
     ctx->buf_ptr = ctx->buf;
     ctx->payload_type = 0;  // 0, H.264/AVC; 1, HEVC/H.265
     return 0;
@@ -54,22 +54,33 @@ void rtpSendData(RTPMuxContext *ctx, const uint8_t *buf, int len, int mark)
      **/
 
     uint8_t *pos = ctx->cache;
-    pos[0] = (RTP_VERSION << 6) & 0xff;      // V P X CC
+    //pos[0] = (RTP_VERSION << 6) & 0xff;      // V P X CC
+    pos[0] = (RTP_VERSION << 6) + 1;      // V P X CC
     pos[1] = (uint8_t)((RTP_H264 & 0x7f) | ((mark & 0x01) << 7)); // M PayloadType
     Load16(&pos[2], (uint16_t)ctx->seq);    // Sequence number
     Load32(&pos[4], ctx->timestamp);
     Load32(&pos[8], ctx->ssrc);
+    Load32(&pos[12], len);
 
     /* copy av data */
-    memcpy(&pos[12], buf, len);
+    memcpy(&pos[16], buf, len);
 
-    res = udpSend(gUdpContext, ctx->cache, (uint32_t)(len + 12));
+    res = udpSend(gUdpContext, ctx->cache, (uint32_t)(len + 16));
+/*
     printf("\nrtpSendData cache [%d]: ", res);
-    for (int i = 0; i < 20; ++i) {
-        printf("%.2X ", ctx->cache[i]);
+    //for (int i = 0; i < 20; ++i) {
+    //    printf("%.2X ", ctx->cache[i]);
+    //}
+    printf("%.2X ... ", ctx->cache[0]);
+    for (int i = 16; i < 16+8 && i < len+16; ++i) {
+	    printf("%.2X ", ctx->cache[i]);
+    }
+    printf(" ... ");
+    for (int i = len+16-5; i < len+16; ++i) {
+	    printf("%.2X ", ctx->cache[i]);
     }
     printf("\n");
-
+*/
     memset(ctx->cache, 0, RTP_PAYLOAD_MAX+10);
 
     ctx->buf_ptr = ctx->buf;  // restore buf_ptr
@@ -79,7 +90,7 @@ void rtpSendData(RTPMuxContext *ctx, const uint8_t *buf, int len, int mark)
 
 // 拼接NAL头部 在 ctx->buff, 然后ff_rtp_send_data
 static void rtpSendNAL(RTPMuxContext *ctx, const uint8_t *nal, int size, int last){
-    printf("rtpSendNAL  len = %d M=%d\n", size, last);
+//    printf("rtpSendNAL  len = %d M=%d\n", size, last);
 
     // Single NAL Packet or Aggregation Packets
     if (size <= RTP_PAYLOAD_MAX){
@@ -204,7 +215,7 @@ void rtpSendH264HEVC(RTPMuxContext *ctx, UDPContext *udp, const uint8_t *buf, in
     const uint8_t *end = buf + size;
     gUdpContext = udp;
 
-    printf("\nrtpSendH264HEVC start\n");
+//    printf("\nrtpSendH264HEVC start\n");
 
     if (NULL == ctx || NULL == udp || NULL == buf ||  size <= 0){
         printf("rtpSendH264HEVC param error.\n");

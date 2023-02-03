@@ -10,7 +10,7 @@
 #define RTP_PAYLOAD_MAX     1400
 
 typedef struct {
-    uint8_t cache[RTP_PAYLOAD_MAX+12];  //RTP packet = RTP header + buf
+    uint8_t cache[RTP_PAYLOAD_MAX+16];  //RTP packet = RTP header + buf
     uint8_t buf[RTP_PAYLOAD_MAX];       // NAL header + NAL
     uint8_t *buf_ptr;
 

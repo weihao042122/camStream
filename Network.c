@@ -22,13 +22,13 @@ int udpInit(UDPContext *udp) {
     udp->servAddr.sin_port = htons(udp->dstPort);
     inet_aton(udp->dstIp, &udp->servAddr.sin_addr);
 
-    // test udp send
+/*    // test udp send
     int num = (int)sendto(udp->socket, "", 1, 0, (struct sockaddr *)&udp->servAddr, sizeof(udp->servAddr));
     if (num != 1){
         printf("udpInit sendto test err. %d", num);
         return -1;
     }
-
+*/
     return 0;
 }
 
